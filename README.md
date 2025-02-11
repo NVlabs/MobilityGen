@@ -56,7 +56,6 @@ To get started with MobilityGen follow the setup and usage instructions below!
     - [How to implement a custom scenario](#how-to-custom-scenario)
 - [📝 Data Format](#-data-format)
 - [👏 Contributing](#-contributing)
-- 
 
 <a id="setup"></a>
 ## 🛠️ Setup
@@ -119,6 +118,8 @@ Next, we'll call ``link_app.sh`` to link the Isaac Sim installation directory to
     ../app/python.sh -m pip install -e .
     ```
 
+    > Note: If you run into an error related to pybind11 while running this command, you may try ``../app/python.sh -m pip install wheel`` and/or ``../app/python.sh -m pip install pybind11[global]``.
+   
 ### Step 4 - Launch Isaac Sim
 
 1. Navigate to the repo root
