@@ -24,11 +24,10 @@ from isaacsim.core.utils.stage import add_reference_to_stage
 from omni.ext.mobility_gen.occupancy_map import OccupancyMap
 from omni.ext.mobility_gen.config import Config
 from omni.ext.mobility_gen.utils.occupancy_map_utils import occupancy_map_generate_from_prim_async
-from omni.ext.mobility_gen.utils.global_utils import new_stage, new_world, set_viewport_camera
+from omni.ext.mobility_gen.utils.global_utils import new_stage, new_world, set_viewport_camera, get_stage
 from omni.ext.mobility_gen.scenarios import Scenario, SCENARIOS
 from omni.ext.mobility_gen.robots import ROBOTS
 from omni.ext.mobility_gen.reader import Reader
-
 
 
 def load_scenario(path: str) -> Scenario:
@@ -37,10 +36,12 @@ def load_scenario(path: str) -> Scenario:
     robot_type = ROBOTS.get(config.robot_type)
     scenario_type = SCENARIOS.get(config.scenario_type)
     open_stage(os.path.join(path, "stage.usd"))
-    prim_utils.delete_prim("/World/robot")
+    stage = get_stage()
+    prim_path = str(stage.GetDefaultPrim().GetPath())
+    prim_utils.delete_prim(os.path.join(prim_path, "robot"))
     new_world(physics_dt=robot_type.physics_dt)
     occupancy_map = reader.read_occupancy_map()
-    robot = robot_type.build("/World/robot")
+    robot = robot_type.build(os.path.join(prim_path, "robot"))
     chase_camera_path = robot.build_chase_camera()
     set_viewport_camera(chase_camera_path)
     robot_type = ROBOTS.get(config.robot_type)
@@ -54,14 +55,19 @@ def load_scenario(path: str) -> Scenario:
 async def build_scenario_from_config(config: Config):
     robot_type = ROBOTS.get(config.robot_type)
     scenario_type = SCENARIOS.get(config.scenario_type)
-    new_stage()
+
+    open_stage(config.scene_usd)
+    stage = get_stage()
+    print("Default prim path: ", str(stage.GetDefaultPrim().GetPath()))
+    prim_path = str(stage.GetDefaultPrim().GetPath())
+
     world = new_world(physics_dt=robot_type.physics_dt)
     await world.initialize_simulation_context_async()
-    add_reference_to_stage(config.scene_usd,"/World/scene")
-    objects.GroundPlane("/World/ground_plane", visible=False)
-    robot = robot_type.build("/World/robot")
+
+    objects.GroundPlane(os.path.join(prim_path, "ground_plane"), visible=False)
+    robot = robot_type.build(os.path.join(prim_path,"robot"))
     occupancy_map = await occupancy_map_generate_from_prim_async(
-        "/World/scene",
+        prim_path,
         cell_size=robot.occupancy_map_cell_size,
         z_min=robot.occupancy_map_z_min,
         z_max=robot.occupancy_map_z_max

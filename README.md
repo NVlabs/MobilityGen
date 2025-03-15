@@ -1,7 +1,7 @@
 <h1 align="center"><span>MobilityGen</span></h1>
 
 <div align="center">
-A toolset built on <a href="https://developer.nvidia.com/isaac/sim">NVIDIA Isaac Sim</a> that 
+A toolset built on <a href="https://developer.nvidia.com/isaac/sim">NVIDIA Isaac Sim</a> that
 allows you to easily collect data for mobile robots.
 <br></br>
 <div>
@@ -15,7 +15,7 @@ Read below to learn more.
 
 ## Overview
 
-MobilityGen is a toolset built on [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) that enables you to easily generate and collect data for mobile robots.  
+MobilityGen is a toolset built on [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) that enables you to easily generate and collect data for mobile robots.
 
 It supports
 
@@ -33,7 +33,7 @@ It supports
     - Normals Images
     - *If you're interested in more, [let us know!](https://github.com/NVlabs/MobilityGen/issues)*
 
-- ***Many robot types*** 
+- ***Many robot types***
 
     - Differential drive - Jetbot, Carter
     - Quadruped - Spot
@@ -60,6 +60,7 @@ To get started with MobilityGen follow the setup and usage instructions below!
     - [How to implement a custom scenario](#how-to-custom-scenario)
 - [📝 Data Format](#-data-format)
 - [👏 Contributing](#-contributing)
+-
 
 <a id="setup"></a>
 ## 🛠️ Setup
@@ -102,7 +103,7 @@ Next, we'll call ``link_app.sh`` to link the Isaac Sim installation directory to
 > This step is helpful as it (1) Enables us to use VS code autocompletion (2) Allows us to call ./app/python.sh to launch Isaac Sim Python scripts (3) Allows us to call ./app/isaac-sim.sh to launch Isaac Sim.
 </details>
 
-### Step 4 - Install other python dependencies (including C++ path planner) (for procedural generation) 
+### Step 4 - Install other python dependencies (including C++ path planner) (for procedural generation)
 
 1. Install miscellaneous python dependencies
 
@@ -122,8 +123,6 @@ Next, we'll call ``link_app.sh`` to link the Isaac Sim installation directory to
     ../app/python.sh -m pip install -e .
     ```
 
-    > Note: If you run into an error related to pybind11 while running this command, you may try ``../app/python.sh -m pip install wheel`` and/or ``../app/python.sh -m pip install pybind11[global]``.
-   
 ### Step 4 - Launch Isaac Sim
 
 1. Navigate to the repo root
@@ -138,7 +137,7 @@ Next, we'll call ``link_app.sh`` to link the Isaac Sim installation directory to
     ./scripts/launch_sim.sh
     ```
 
-That's it!  If everything worked, you should see Isaac Sim open with a window titled ``MobilityGen`` appear.  
+That's it!  If everything worked, you should see Isaac Sim open with a window titled ``MobilityGen`` appear.
 
 <img src="./assets/extension_gui.png" height="640px">
 
@@ -229,7 +228,7 @@ Rendering the sensor data is done offline.  To do this call the following
     python scripts/replay_directory.py --render_interval=200
     ```
 
-    > Note: For speed for this tutorial, we use a render interval of 200.  If our physics timestep is 200 FPS, this means we 
+    > Note: For speed for this tutorial, we use a render interval of 200.  If our physics timestep is 200 FPS, this means we
     > render 1 image per second.
 
 That's it! Now the data with renderings should be stored in ``~/MobilityGenData/replays``.
@@ -310,7 +309,7 @@ After a few seconds, you should see the scene and occupancy map appear.
 
 1. Click ``Start Recording`` to start recording data
 
-2. Go grab some coffee!  
+2. Go grab some coffee!
 
     > The procedural generated methods automatically determine when to reset (ie: if the robot collides with
     > an object and needs to respawn).  If you run into any issues with the procedural methods getting stuck, please let us know.
@@ -360,7 +359,7 @@ for generating random motions.
 
 ## 📝 Data Format
 
-MobilityGen records two types of data.  
+MobilityGen records two types of data.
 
 - *Static Data* is recorded at the beginning of a recording
     - Occupancy map
@@ -405,8 +404,6 @@ The state_dict has the following schema
     "robot.front_camera.left.depth_image": np.ndarray,               # [HxW], np.fp32 - Depth in meters
     "robot.front_camera.left.segmentation_image": np.ndarray,        # [HxW], np.uint8 - Segmentation class index
     "robot.front_camera.left.segmentation_info": dict,               # see Isaac replicator segmentation info format
-    "robot.front_camera.left.position": np.ndarray,                  # [3] - XYZ camera world position
-    "robot.front_camera.left.orientation": np.ndarray,               # [4] - Quaternion camera world orientation
     ...
 }
 ```
@@ -459,12 +456,57 @@ In case you're interested, each recording is represented as a directory with the
 Most of the state information is captured under the ``state/common`` folder, as dictionary in a single ``.npy`` file.
 
 However, for some data (images) this is inefficient.  These instead get captured in their own folder based on the data
-type and the name.  (ie: rgb/robot.front_camera.left.depth_image).  
+type and the name.  (ie: rgb/robot.front_camera.left.depth_image).
 
 The name of each file corresponds to its physics timestep.
 
 If you have any questions regarding the data logged by MobilityGen, please [let us know!](https://github.com/NVlabs/MobilityGen/issues)
 
+### Augmented Scene Generation
+
+The `scripts/generate_augmented_scenes.py` script allows you to generate augmented scenes with randomly placed obstacles. This is useful for creating training data or testing scenarios.
+
+### Usage
+
+To generate augmented scenes, run:
+```bash
+python scripts/generate_augmented_scenes.py \
+    --env_url="http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.2/Isaac/Environments/Simple_Warehouse/warehouse_multiple_shelves.usd" \
+    --output_dir="~/MobilityGenData/augmented_scenes" \
+    --num_scenes=1 \
+    --num_obstacles=10
+```
+
+#### Arguments:
+- `--env_url`: Path or URL to the environment USD file
+- `--output_dir`: Directory where generated scenes will be saved
+- `--num_scenes`: Number of scenes to generate (default: 1)
+- `--num_obstacles`: Number of obstacles per scene (default: 20)
+
+### Output Structure
+```
+output_dir/
+├── base_omap/             # Base occupancy map without obstacles
+│   └── occupancy_map/     # ROS-format occupancy map
+│       ├── map.yaml       # Map configuration
+│       └── map.png        # Map image
+├── scene_000/             # First generated scene
+│   ├── stage.usd          # Scene with obstacles
+│   └── occupancy_map/     # ROS-format occupancy map
+│       ├── map.yaml       # Map configuration
+│       └── map.png        # Map image
+├── scene_001/             # Second generated scene
+│   ├── stage.usd          # Scene with obstacles
+│   └── occupancy_map/     # ROS-format occupancy map
+│       ├── map.yaml       # Map configuration
+│       └── map.png        # Map image
+└── ...                    # Additional scenes
+```
+
+Each scene contains:
+- A USD stage file with the environment and placed obstacles
+- An occupancy map showing free and occupied space
+- No additional subfolders or categorization
 
 ## 👏 Contributing
 This [Developer Certificate of Origin](https://developercertificate.org/) applies to this project.
