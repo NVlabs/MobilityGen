@@ -48,7 +48,7 @@ if __name__ == "__main__":
     parser.add_argument("--rgb_enabled", type=bool, default=True)
     parser.add_argument("--segmentation_enabled", type=bool, default=True)
     parser.add_argument("--depth_enabled", type=bool, default=True)
-    parser.add_argument("--instance_id_segmentation_enabled", type=bool, default=True)
+    parser.add_argument("--instance_id_segmentation_enabled", type=bool, default=False)
     parser.add_argument("--normals_enabled", type=bool, default=False)
     parser.add_argument("--render_rt_subframes", type=int, default=1)
     parser.add_argument("--render_interval", type=int, default=1)
@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
     for step in tqdm.tqdm(range(0, num_steps, args.render_interval)):
         
-        state_dict = reader.read_state_dict(index=step)
+        state_dict_original = reader.read_state_dict(index=step)
 
-        scenario.load_state_dict(state_dict)
+        scenario.load_state_dict(state_dict_original)
         scenario.write_replay_data()
 
         simulation_app.update()
@@ -117,6 +117,9 @@ if __name__ == "__main__":
         scenario.update_state()
 
         state_dict = scenario.state_dict_common()
+
+        state_dict.update(state_dict_original) # overwrite with original state, to ensure physics based values are correct
+        
         state_rgb = scenario.state_dict_rgb()
         state_segmentation = scenario.state_dict_segmentation()
         state_depth = scenario.state_dict_depth()
