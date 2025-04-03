@@ -124,7 +124,7 @@ Next, we'll call ``link_app.sh`` to link the Isaac Sim installation directory to
 
     > Note: If you run into an error related to pybind11 while running this command, you may try ``../app/python.sh -m pip install wheel`` and/or ``../app/python.sh -m pip install pybind11[global]``.
    
-### Step 4 - Launch Isaac Sim
+### Step 5 - Launch Isaac Sim
 
 1. Navigate to the repo root
 
@@ -264,7 +264,7 @@ That's it!  Once you've gotten the hang of how to record data, you might try
 2. Implement or customize your own [Robot](./exts/omni.ext.mobility_gen/omni/ext/mobility_gen/robots.py) class.
 3. Implement or customize your own [Scenario](./exts/omni.ext.mobility_gen/omni/ext/mobility_gen/scenarios.py) class.
 
-If you find MobilityGen helpful for your use case, run in to issues, or have any questions please [let us know!](https://github.com/NVlabs/MobilityGen/issues).
+If you find MobilityGen helpful for your use case, run into issues, or have any questions please [let us know!](https://github.com/NVlabs/MobilityGen/issues).
 
 <a id="contributing"></a>
 
@@ -312,7 +312,7 @@ After a few seconds, you should see the scene and occupancy map appear.
 
 2. Go grab some coffee!  
 
-    > The procedural generated methods automatically determine when to reset (ie: if the robot collides with
+    > The procedurally generated methods automatically determine when to reset (ie: if the robot collides with
     > an object and needs to respawn).  If you run into any issues with the procedural methods getting stuck, please let us know.
 
 3. Click ``Stop Recording`` to stop recording data.
@@ -456,7 +456,7 @@ In case you're interested, each recording is represented as a directory with the
 
 ```
 
-Most of the state information is captured under the ``state/common`` folder, as dictionary in a single ``.npy`` file.
+Most of the state information is captured under the ``state/common`` folder, as a dictionary in a single ``.npy`` file.
 
 However, for some data (images) this is inefficient.  These instead get captured in their own folder based on the data
 type and the name.  (ie: rgb/robot.front_camera.left.depth_image).  
