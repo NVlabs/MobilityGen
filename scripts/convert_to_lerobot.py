@@ -18,7 +18,7 @@ import os
 import json
 from collections import OrderedDict
 from pathlib import Path
-from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+from lerobot.datasets.lerobot_dataset import LeRobotDataset
 import numpy as np
 import PIL
 
@@ -233,8 +233,7 @@ def write_frames(
                 img = np.stack([img] * 3, axis=-1) # reshape from (h,w) to (h,w,3)
                 frame[feature] = img
 
-        frame["task"] = task
-        dataset.add_frame(frame)
+        dataset.add_frame(frame, task)
 
 # Convert a collection of MobilityGen datasets into a single LeRobot dataset.
 def convert_to_lerobot_dataset(
