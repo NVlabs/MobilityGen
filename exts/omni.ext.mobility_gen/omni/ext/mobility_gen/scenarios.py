@@ -15,9 +15,11 @@
 
 
 import numpy as np
+import PIL.Image
+from PIL import Image, ImageDraw
 from typing import Tuple
 
-from mobility_gen_path_planner import generate_paths
+from mobility_gen_path_planner import generate_paths, compress_path
 
 from omni.ext.mobility_gen.utils.path_utils import PathHelper, vector_angle
 from omni.ext.mobility_gen.utils.registry import Registry
@@ -49,6 +51,9 @@ class Scenario(Module):
     def step(self, step_size: float) -> bool:
         raise NotImplementedError
 
+    def get_visualization_image(self):
+        image = self.occupancy_map.ros_image()
+        return image
 
 SCENARIOS = Registry[Scenario]()
 
@@ -67,6 +72,7 @@ class KeyboardTeleoperationScenario(Scenario):
     def reset(self):
         pose = self.pose_sampler.sample(self.buffered_occupancy_map)
         self.robot.set_pose_2d(pose)
+        self.update_state()
 
     def step(self, step_size):
 
@@ -105,6 +111,7 @@ class GamepadTeleoperationScenario(Scenario):
     def reset(self):
         pose = self.pose_sampler.sample(self.buffered_occupancy_map)
         self.robot.set_pose_2d(pose)
+        self.update_state()
 
     def step(self, step_size: float):
 
@@ -139,6 +146,7 @@ class RandomAccelerationScenario(Scenario):
         pose = self.pose_sampler.sample(self.buffered_occupancy_map)
         self.robot.set_pose_2d(pose)
         self.is_alive = True
+        self.update_state()
 
     def step(self, step_size: float):
 
@@ -193,6 +201,7 @@ class RandomPathFollowingScenario(Scenario):
         output = generate_paths(start, freespace)
         end = output.sample_random_end_point()
         path = output.unroll_path(end)
+        path, _ = compress_path(path)  # remove redundant points
         path = path[:, ::-1] # y,x -> x,y coordinates
         path = self.occupancy_map.pixel_to_world_numpy(path)
         self.target_path.set_value(path)
@@ -204,6 +213,7 @@ class RandomPathFollowingScenario(Scenario):
         self.robot.set_pose_2d(pose)
         self.set_random_target_path()
         self.is_alive = True
+        self.update_state()
     
     def step(self, step_size: float):
 
@@ -228,7 +238,7 @@ class RandomPathFollowingScenario(Scenario):
         dist_to_target = np.sqrt(np.sum((pt_robot - path_end)**2))
 
         if dist_to_target < self.robot.path_following_stop_distance_threshold:
-            self.set_random_target_path()
+            self.is_alive = False
         else:
             vec_robot_unit = np.array([np.cos(current_pose.theta), np.sin(current_pose.theta)])
             vec_target = (pt_target - pt_robot)
@@ -248,3 +258,17 @@ class RandomPathFollowingScenario(Scenario):
 
         return self.is_alive
 
+    def get_visualization_image(self):
+        image = self.occupancy_map.ros_image().copy().convert("RGBA")
+        draw = ImageDraw.Draw(image)
+        path = self.target_path.get_value()
+        if path is not None:
+            line_coordinates = []
+            path_pixels = self.occupancy_map.world_to_pixel_numpy(path)
+            for i in range(len(path_pixels)):
+                line_coordinates.append(int(path_pixels[i, 0]))
+                line_coordinates.append(int(path_pixels[i, 1]))
+            width_pixels = self.robot.occupancy_map_radius / self.occupancy_map.resolution
+            draw.line(line_coordinates, fill="green", width=int(width_pixels/2), joint="curve")
+            
+        return image

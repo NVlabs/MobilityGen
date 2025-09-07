@@ -188,30 +188,120 @@ Below details a typical workflow for collecting data with MobilityGen.
     ./scripts/launch_sim.sh
     ```
 
-### Step 2 - Build a scenario
+### Step 2 - Load a stage
 
-This assumes you see the MobilityGen extension window.
+To get started, we'll open an example warehouse stage.
 
-1. Under Scene USD URL / Path copy and paste the following
+1. Select ``File`` -> ``Open``
+
+2. Enter the following URL under ``File name`` 
+
+    ```
+    http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.2/Isaac/Environments/Simple_Warehouse/warehouse_multiple_shelves.usd
+    ```
+3. Click ``Open File``
+
+    > If you see a prompt ``Opening a Read Only File`` appear you can click ``Open Original File``
+
+After a few seconds, you should see the stage appear.
+
+### Step 3 - Create an occupancy map
+
+Next, we need need to build an occupancy map for the environment.
+
+To do this, we'll use the Occupancy Map tool provided with Isaac Sim
+
+1. Select ``Tools`` -> ``Robotics`` -> ``Occupancy Map`` to open the Occupancy Map extension
+
+    > You may need to also click the ``Occupancy Map`` tab in the bottom window pane to see the extension window.
+
+2. In the ``Occupancy Map`` window set ``Origin`` to 
+
+    - ``X``: ``2.0``
+    - ``Y``: ``0.0``
+    - ``Z``: ``0.0``
+
+3. In the ``Occupancy Map`` window set ``Upper Bound`` to 
+
+    - ``X``: ``10.0``
+    - ``Y``: ``20.0``
+    - ``Z``: ``2.0``  (We'll assume the robot can move under 2 meter overpasses.)
+
+4. In the ``Occupancy Map`` window set ``Lower Bound`` to
+
+    - ``X``: ``-14.0``
+    - ``Y``: ``-18.0``
+    - ``Z``: ``0.1``  (We'll assume we can move over 5cm bumps.)
+
+5. Click ``Calculate`` to generate the Occupancy Map
+
+7. Click ``Visualize Image`` to view the Occupancy Map
+
+8. In this ``Visualization`` window under ``Rotate Image`` select ``180``
+
+8. In this ``Visualization`` window under ``Coordinate Type`` select ``ROS Occupancy Map Parameters File YAML``
+
+10. Click ``Regenerate Image``
+
+12. Copy the YAML text generated to your clipboard
+
+11. In a text editor of choice, create a new file named ``~/MobilityGenData/maps/warehouse_multiple_shelves/map.yaml``
+
+    > Note: ``~`` corresponds to your user's home directory.  By default,
+    > we'll keep our data in ``~/MobilityGenData``
+
+12. Paste the YAML text copied from the ``Visualization`` window into the created file.  
+
+13. Edit the line ``image: warehouse_multiple_shelves.png`` to read ``image: map.png``
+
+14. Save the file.
+
+11. Back in the ``Visualization`` window click ``Save Image``
+
+12. In the tree explorer open the folder ``~/MobilityGenData/maps/warehouse_multiple_shelves``
+
+12. Under file name enter ``map.png``
+
+13. Click ``Save``
+
+That's it!  You should now have a folder ``~/MobilityGenData/maps/warehouse_multiple_shelves/`` with a file named
+``map.yaml`` and ``map.png`` inside.
+
+> Note: For more details on generating occupancy maps, check the documents [here](https://docs.omniverse.nvidia.com/isaacsim/latest/features/ext_omni_isaac_occupancy_map.html).
+> However, please note, to work with MobilityGen, you must use the rotation and coodinate type specifications detailed above.
+
+### Step 4 - Build a scenario
+
+Now that we have a ROS format Occupancy Map of our environment, we're ready to use MobilityGen!
+
+Perform the following steps in the ``MobilityGen`` extension window to build a new scenario.
+
+1. Under ``Stage`` paste the following, corresponding to the environment USD we used in [Step 3](#step-3---create-an-occupancy-map)
 
     ```
     http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.2/Isaac/Environments/Simple_Warehouse/warehouse_multiple_shelves.usd
     ```
 
-2. Under the ``Scenario`` dropdown select ``KeyboardTeleoperationScenario`` to start
+2. Under ``Occupancy Map`` enter the following corresponding to the Occupancy Map we created in [Step 3](#step-3---create-an-occupancy-map)
+
+    ```
+    ~/MobilityGenData/maps/warehouse_multiple_shelves/map.yaml
+    ```
 
 3. Under the ``Robot`` dropdown select ``H1Robot``
+
+2. Under the ``Scenario`` dropdown select ``KeyboardTeleoperationScenario`` to start
 
 4. Click ``Build``
 
 After a few seconds, you should see the scene and occupancy map appear.
 
-### Step 3 - Initialize / reset the scenario
+### Step 5 - Initialize / reset the scenario
 
-1. Click the ``Reset`` function to randomly initialize the scenario.  Do this until the robot spawns inside the warehouse.
+1. Click the ``Reset`` function to randomly initialize the scenario.  Do this until the robot spawns in a desirable location.
 
 
-### Step 4 - Test drive the robot
+### Step 6 - Test drive the robot
 
 Before you start recording, try moving the robot around to get a feel for it
 
@@ -222,7 +312,7 @@ To move the robot, use the following keys
 - ``S`` - Move Backwards
 - ``D`` - Turn right
 
-### Step 5 - Start recording!
+### Step 7 - Start recording!
 
 Once you're comfortable, you can record a log.
 
@@ -234,7 +324,7 @@ Once you're comfortable, you can record a log.
 
 The data is recorded to ``~/MobilityGenData/recordings`` by default.
 
-### Step 6 - Render data
+### Step 8 - Render data
 
 If you've gotten this far, you've recorded a trajectory, but it doesn't include the rendered sensor data.
 
@@ -259,7 +349,7 @@ Rendering the sensor data is done offline.  To do this call the following
 
 That's it! Now the data with renderings should be stored in ``~/MobilityGenData/replays``.
 
-### Step 7 - Visualize the Data
+### Step 9 - Visualize the Data
 
 We provide a few examples in the [examples](./examples) folder for working with the data.
 
@@ -424,6 +514,8 @@ The state_dict has the following schema
     "robot.action": np.ndarray,                                      # [2] - Linear, angular command velocity
     "robot.position": np.ndarray,                                    # [3] - XYZ
     "robot.orientation": np.ndarray,                                 # [4] - Quaternion
+    "robot.linear_velocity": np.ndarray,                             # [3] - The linear velocity in world frame (As retrieved by robot.get_linear_velocity() in isaac sim) 
+    "robot.angular_velocity": np.ndarray,                            # [3] - The angular velocity of the robot in the world frame.  (As retrieved by robot.get_angular_velocity() in isaac sim) 
     "robot.joint_positions": np.ndarray,                             # [J] - Joint positions
     "robot.joint_velocities": np.ndarray,                            # [J] - Joint velocities
     "robot.front_camera.left.rgb_image": np.ndarray,                 # [HxWx3], np.uint8 - RGB image

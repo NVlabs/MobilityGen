@@ -18,13 +18,10 @@ import os
 import isaacsim.core.utils.prims as prim_utils
 from isaacsim.core.utils.stage import open_stage
 import isaacsim.core.api.objects as objects
-from isaacsim.core.utils.stage import add_reference_to_stage
 
 
 from omni.ext.mobility_gen.occupancy_map import OccupancyMap
-from omni.ext.mobility_gen.config import Config
-from omni.ext.mobility_gen.utils.occupancy_map_utils import occupancy_map_generate_from_prim_async
-from omni.ext.mobility_gen.utils.global_utils import new_stage, new_world, set_viewport_camera
+from omni.ext.mobility_gen.utils.global_utils import new_world, set_viewport_camera, get_stage
 from omni.ext.mobility_gen.scenarios import Scenario, SCENARIOS
 from omni.ext.mobility_gen.robots import ROBOTS
 from omni.ext.mobility_gen.reader import Reader
@@ -37,10 +34,18 @@ def load_scenario(path: str) -> Scenario:
     robot_type = ROBOTS.get(config.robot_type)
     scenario_type = SCENARIOS.get(config.scenario_type)
     open_stage(os.path.join(path, "stage.usd"))
-    prim_utils.delete_prim("/World/robot")
+    
+    stage = get_stage()
+
+    robot_prim_path = "/World/robot"
+
+    if stage.GetPrimAtPath(path).IsValid():
+        prim_utils.delete_prim(robot_prim_path)
+        
+    objects.GroundPlane("/World/ground_plane", visible=False)
     new_world(physics_dt=robot_type.physics_dt)
     occupancy_map = reader.read_occupancy_map()
-    robot = robot_type.build("/World/robot")
+    robot = robot_type.build(robot_prim_path)
     chase_camera_path = robot.build_chase_camera()
     set_viewport_camera(chase_camera_path)
     robot_type = ROBOTS.get(config.robot_type)
@@ -50,23 +55,3 @@ def load_scenario(path: str) -> Scenario:
     scenario = scenario_type.from_robot_occupancy_map(robot, occupancy_map)
     return scenario
 
-
-async def build_scenario_from_config(config: Config):
-    robot_type = ROBOTS.get(config.robot_type)
-    scenario_type = SCENARIOS.get(config.scenario_type)
-    new_stage()
-    world = new_world(physics_dt=robot_type.physics_dt)
-    await world.initialize_simulation_context_async()
-    add_reference_to_stage(config.scene_usd,"/World/scene")
-    objects.GroundPlane("/World/ground_plane", visible=False)
-    robot = robot_type.build("/World/robot")
-    occupancy_map = await occupancy_map_generate_from_prim_async(
-        "/World/scene",
-        cell_size=robot.occupancy_map_cell_size,
-        z_min=robot.occupancy_map_z_min,
-        z_max=robot.occupancy_map_z_max
-    )
-    chase_camera_path = robot.build_chase_camera()
-    set_viewport_camera(chase_camera_path)
-    scenario = scenario_type.from_robot_occupancy_map(robot, occupancy_map)
-    return scenario

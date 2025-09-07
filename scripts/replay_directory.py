@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument("--rgb_enabled", type=bool, default=True)
     parser.add_argument("--segmentation_enabled", type=bool, default=True)
     parser.add_argument("--depth_enabled", type=bool, default=True)
-    parser.add_argument("--instance_id_segmentation_enabled", type=bool, default=True)
+    parser.add_argument("--instance_id_segmentation_enabled", type=bool, default=False)
     parser.add_argument("--normals_enabled", type=bool, default=False)
     parser.add_argument("--render_rt_subframes", type=int, default=1)
     parser.add_argument("--render_interval", type=int, default=1)
@@ -50,38 +50,19 @@ if __name__ == "__main__":
     if args.output is None:
         args.output = os.path.join(DATA_DIR, "replays")
 
-    args.input = os.path.expanduser(args.input)
-    args.output = os.path.expanduser(args.output)
-
-    recording_paths = glob.glob(os.path.join(args.input, "*"))
-
-    for recording_path in recording_paths:
-
-        name = os.path.basename(recording_path)
-
-        output_path = os.path.join(args.output, name)
-
-        input_steps = len(glob.glob(os.path.join(recording_path, "state", "common", "*.npy")))
-        output_steps = len(glob.glob(os.path.join(output_path, "state", "common", "*.npy")))
-
-        if input_steps == output_steps:
-            print(f"Skipping {name} as it is already replayed")
-        else:
-            print(f"Replaying {name}")
-
-            subprocess.call([
-                "./app/python.sh",
-                "scripts/replay_implementation.py",
-                "--ext-folder", "exts",
-                "--enable", "omni.ext.mobility_gen",
-                "--enable", "isaacsim.asset.gen.omap",
-                "--input_path", recording_path,
-                "--output_path", output_path,
-                "--render_interval", str(args.render_interval),
-                "--render_rt_subframes", str(args.render_rt_subframes),
-                "--rgb_enabled", str(args.rgb_enabled),
-                "--segmentation_enabled", str(args.segmentation_enabled),
-                "--instance_id_segmentation_enabled", str(args.instance_id_segmentation_enabled),
-                "--normals_enabled", str(args.normals_enabled),
-                "--depth_enabled", str(args.depth_enabled)
-            ])
+    subprocess.call([
+        "./app/python.sh",
+        "scripts/replay_directory_implementation.py",
+        "--ext-folder", "exts",
+        "--enable", "omni.ext.mobility_gen",
+        "--enable", "isaacsim.asset.gen.omap",
+        "--input", args.input,
+        "--output", args.output,
+        "--render_interval", str(args.render_interval),
+        "--render_rt_subframes", str(args.render_rt_subframes),
+        "--rgb_enabled", str(args.rgb_enabled),
+        "--segmentation_enabled", str(args.segmentation_enabled),
+        "--instance_id_segmentation_enabled", str(args.instance_id_segmentation_enabled),
+        "--normals_enabled", str(args.normals_enabled),
+        "--depth_enabled", str(args.depth_enabled)
+    ])
