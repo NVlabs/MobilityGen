@@ -139,6 +139,8 @@ class Robot(Module):
         self.orientation = Buffer()
         self.joint_positions = Buffer()
         self.joint_velocities = Buffer()
+        self.linear_velocity = Buffer()
+        self.angular_velocity = Buffer()
         self.front_camera = front_camera
 
     @classmethod
@@ -187,6 +189,8 @@ class Robot(Module):
         self.orientation.set_value(ori)
         self.joint_positions.set_value(self.robot.get_joint_positions())
         self.joint_velocities.set_value(self.robot.get_joint_velocities())
+        self.linear_velocity.set_value(self.robot.get_linear_velocity())
+        self.angular_velocity.set_value(self.robot.get_angular_velocity())
         super().update_state()
 
     def write_replay_data(self):
