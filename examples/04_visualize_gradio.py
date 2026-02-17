@@ -100,11 +100,11 @@ with gr.Blocks(title="MobilityGen - Data Explorer", fill_height=True) as demo:
                 with gr.Row(equal_height=True):
                     map_plot = gr.Plot(scale=2, show_label=False)
                     with gr.Column(scale=1):
-                        left_rgb = gr.Image(show_label=False, show_download_button=False)
-                        left_depth = gr.Image(show_label=False, show_download_button=False)
+                        left_rgb = gr.Image(show_label=False)
+                        left_depth = gr.Image(show_label=False)
                     with gr.Column(scale=1):
-                        right_rgb = gr.Image(show_label=False, show_download_button=False)
-                        right_depth = gr.Image(show_label=False, show_download_button=False)
+                        right_rgb = gr.Image(show_label=False)
+                        right_depth = gr.Image(show_label=False)
                 with gr.Row():
                     slider = gr.Slider(label="Timestep", minimum=0, maximum=0, step=1)
 
