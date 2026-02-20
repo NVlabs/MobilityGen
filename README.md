@@ -1,6 +1,10 @@
 <h1 align="center"><span>MobilityGen</span></h1>
 
 <div align="center">
+    
+> MobilityGen is now integrated into Isaac Sim 5.0!
+> Check it out [here](https://docs.isaacsim.omniverse.nvidia.com/latest/synthetic_data_generation/tutorial_replicator_mobility_gen.html).
+
 A toolset built on <a href="https://developer.nvidia.com/isaac/sim">NVIDIA Isaac Sim</a> that
 allows you to easily collect data for mobile robots.
 <br></br>
