@@ -11,6 +11,8 @@ allows you to easily collect data for mobile robots.
 
 Read below to learn more.
 
+> Wondering what you can do with MobilityGen data?  Check out [X-MOBILITY](https://github.com/NVlabs/X-Mobility) for a model trained on data similar to that produced by MobilityGen
+
 </div>
 
 ## Overview
