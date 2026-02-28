@@ -424,6 +424,8 @@ The state_dict has the following schema
     "robot.action": np.ndarray,                                      # [2] - Linear, angular command velocity
     "robot.position": np.ndarray,                                    # [3] - XYZ
     "robot.orientation": np.ndarray,                                 # [4] - Quaternion
+    "robot.linear_velocity": np.ndarray,                             # [3] - The linear velocity in world frame (As retrieved by robot.get_linear_velocity() in isaac sim) 
+    "robot.angular_velocity": np.ndarray,                            # [3] - The angular velocity of the robot in the world frame.  (As retrieved by robot.get_angular_velocity() in isaac sim) 
     "robot.joint_positions": np.ndarray,                             # [J] - Joint positions
     "robot.joint_velocities": np.ndarray,                            # [J] - Joint velocities
     "robot.front_camera.left.rgb_image": np.ndarray,                 # [HxWx3], np.uint8 - RGB image
