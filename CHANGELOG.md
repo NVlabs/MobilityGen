@@ -2,6 +2,13 @@
 
 # main
 
+- Added instructions for manually building Occupancy Map with Isaac Sim Occupancy Map tool
+- Modified extension to load pre-defined occupancy map rather than building on the fly
+    - User is now required to build the Occupancy Map before data collection.  
+- Added prim_get_world_transform to get world and local pose to address performance bottleneck with Isaac Sim method
+- Added example for parquet conversion (to support X-Mobility training)
+- Added robot linear and angular velocity to state (to support X-Mobility training)
+- Fixed bug when replay rendering does not include segmentation info
 - Added support for surface normals image in replay rendering
 - Added support for instance ID segmentation rendering
 - Added camera world pose to state

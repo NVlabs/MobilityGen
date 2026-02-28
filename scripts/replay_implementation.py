@@ -31,6 +31,7 @@ import numpy as np
 from PIL import Image
 import glob
 import tqdm
+import time
 
 import omni.replicator.core as rep
 
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     parser.add_argument("--rgb_enabled", type=bool, default=True)
     parser.add_argument("--segmentation_enabled", type=bool, default=True)
     parser.add_argument("--depth_enabled", type=bool, default=True)
-    parser.add_argument("--instance_id_segmentation_enabled", type=bool, default=True)
+    parser.add_argument("--instance_id_segmentation_enabled", type=bool, default=False)
     parser.add_argument("--normals_enabled", type=bool, default=False)
     parser.add_argument("--render_rt_subframes", type=int, default=1)
     parser.add_argument("--render_interval", type=int, default=1)
@@ -99,11 +100,13 @@ if __name__ == "__main__":
     print(f"\tRendering RT subframes: {args.render_rt_subframes}")
     print(f"\tRender interval: {args.render_interval}")
 
+    t0 = time.perf_counter()
+    count = 0
     for step in tqdm.tqdm(range(0, num_steps, args.render_interval)):
         
-        state_dict = reader.read_state_dict(index=step)
+        state_dict_original = reader.read_state_dict(index=step)
 
-        scenario.load_state_dict(state_dict)
+        scenario.load_state_dict(state_dict_original)
         scenario.write_replay_data()
 
         simulation_app.update()
@@ -117,6 +120,12 @@ if __name__ == "__main__":
         scenario.update_state()
 
         state_dict = scenario.state_dict_common()
+
+        for k, v in state_dict_original.items():
+            # overwrite with original state, to ensure physics based values are correct
+            if v is not None:
+                state_dict[k] = v # don't overwrite "None" values
+        
         state_rgb = scenario.state_dict_rgb()
         state_segmentation = scenario.state_dict_segmentation()
         state_depth = scenario.state_dict_depth()
@@ -127,5 +136,10 @@ if __name__ == "__main__":
         writer.write_state_dict_segmentation(state_segmentation, step)
         writer.write_state_dict_depth(state_depth, step)
         writer.write_state_dict_normals(state_normals, step)
+
+        count += 1
+    t1 = time.perf_counter()
+
+    print(f"Process time per frame: {count / (t1 - t0)}")
 
     simulation_app.close()

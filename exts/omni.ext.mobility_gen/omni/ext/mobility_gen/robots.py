@@ -139,6 +139,8 @@ class Robot(Module):
         self.orientation = Buffer()
         self.joint_positions = Buffer()
         self.joint_velocities = Buffer()
+        self.linear_velocity = Buffer()
+        self.angular_velocity = Buffer()
         self.front_camera = front_camera
 
     @classmethod
@@ -182,11 +184,13 @@ class Robot(Module):
         raise NotImplementedError
     
     def update_state(self):
-        pos, ori = self.robot.get_local_pose()
+        pos, ori = self.robot.get_world_pose()
         self.position.set_value(pos)
         self.orientation.set_value(ori)
         self.joint_positions.set_value(self.robot.get_joint_positions())
         self.joint_velocities.set_value(self.robot.get_joint_velocities())
+        self.linear_velocity.set_value(self.robot.get_linear_velocity())
+        self.angular_velocity.set_value(self.robot.get_angular_velocity())
         super().update_state()
 
     def write_replay_data(self):
@@ -203,7 +207,7 @@ class Robot(Module):
         self.articulation_view.initialize()
         self.robot.set_world_velocity(np.array([0., 0., 0., 0., 0., 0.]))
         self.robot.post_reset()
-        position, orientation = self.robot.get_local_pose()
+        position, orientation = self.robot.get_world_pose()
         position[0] = pose.x
         position[1] = pose.y
         position[2] = self.z_offset
@@ -213,7 +217,7 @@ class Robot(Module):
         )
     
     def get_pose_2d(self) -> Pose2d:
-        position, orientation = self.robot.get_local_pose()
+        position, orientation = self.robot.get_world_pose()
         theta = rot_utils.quats_to_euler_angles(orientation)[2]
         return Pose2d(
             x=position[0],

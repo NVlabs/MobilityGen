@@ -19,11 +19,11 @@ from typing import Tuple
 
 
 import omni.replicator.core as rep
-from isaacsim.core.prims import SingleXFormPrim as XFormPrim
 
 
 from omni.ext.mobility_gen.utils.global_utils import get_stage
-from omni.ext.mobility_gen.utils.stage_utils import stage_add_usd_ref
+from omni.ext.mobility_gen.utils.stage_utils import stage_add_usd_ref, stage_get_prim
+from omni.ext.mobility_gen.utils.prim_utils import prim_get_world_transform
 from omni.ext.mobility_gen.common import Module, Buffer
 
 
@@ -51,7 +51,7 @@ class Camera(Sensor):
         self._instance_id_segmentation_annotator = None
         self._normals_annotator = None
         self._depth_annotator = None
-        self._xform_prim = XFormPrim(self._prim_path)
+        self._prim = stage_get_prim(get_stage(), self._prim_path)
 
         self.rgb_image = Buffer(tags=["rgb"])
         self.segmentation_image = Buffer(tags=["segmentation"])
@@ -166,7 +166,7 @@ class Camera(Sensor):
             data = self._normals_annotator.get_data()
             self.normals_image.set_value(data)
             
-        position, orientation = self._xform_prim.get_world_pose()
+        position, orientation = prim_get_world_transform(self._prim)
         self.position.set_value(position)
         self.orientation.set_value(orientation)
         

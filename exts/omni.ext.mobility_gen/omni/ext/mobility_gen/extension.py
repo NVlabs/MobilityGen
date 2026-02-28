@@ -24,14 +24,27 @@ import glob
 import omni.ext
 import omni.ui as ui
 
+from isaacsim.core.utils.stage import open_stage
+from isaacsim.gui.components.ui_utils import (
+    btn_builder,
+    cb_builder,
+    color_picker_builder,
+    dropdown_builder,
+    float_builder,
+    multi_btn_builder,
+    xyz_builder,
+)
+import isaacsim.core.api.objects as objects
+import carb
+
 from omni.ext.mobility_gen.utils.global_utils import save_stage
 from omni.ext.mobility_gen.writer import Writer
 from omni.ext.mobility_gen.inputs import GamepadDriver, KeyboardDriver
 from omni.ext.mobility_gen.scenarios import SCENARIOS, Scenario
-from omni.ext.mobility_gen.utils.global_utils import get_world
+from omni.ext.mobility_gen.utils.global_utils import get_world, new_world, set_viewport_camera
 from omni.ext.mobility_gen.robots import ROBOTS
 from omni.ext.mobility_gen.config import Config
-from omni.ext.mobility_gen.build import build_scenario_from_config
+from omni.ext.mobility_gen.occupancy_map import OccupancyMap
 
 
 if "MOBILITY_GEN_DATA" in os.environ:
@@ -77,19 +90,26 @@ class MobilityGenExtension(omni.ext.IExt):
             with ui.VStack():
                 with ui.VStack():
                     with ui.HStack():
-                        ui.Label("USD Path / URL")
+                        ui.Label("Stage")
                         self.scene_usd_field_string_model = ui.SimpleStringModel()
                         self.scene_usd_field = ui.StringField(model=self.scene_usd_field_string_model, height=25)
+
+                    with ui.HStack():
+                        ui.Label("Occupancy Map")
+                        self.omap_field_string_model = ui.SimpleStringModel()
+                        self.omap_field = ui.StringField(model=self.omap_field_string_model, height=25)
+
+                    with ui.HStack():
+                        ui.Label("Robot Type")
+                        self.robot_combo_box = ui.ComboBox(0, *ROBOTS.names())
 
                     with ui.HStack():
                         ui.Label("Scenario Type")
                         self.scenario_combo_box = ui.ComboBox(0, *SCENARIOS.names())
 
-                    with ui.HStack():
-                        ui.Label("Robot Type")
-                        self.robot_combo_box = ui.ComboBox(0, *ROBOTS.names())
-                
+
                     ui.Button("Build", clicked_fn=self.build_scenario)
+                    # ui.Button("Build", clicked_fn=self.build_scenario)
 
                 with ui.VStack():
                     self.recording_count_label = ui.Label("")
@@ -112,9 +132,10 @@ class MobilityGenExtension(omni.ext.IExt):
                     self._occupancy_map_image_provider
                 )
 
-    def draw_occ_map(self):
+    def draw_visualization_image(self):
         if self.scenario is not None:
-            image = self.scenario.occupancy_map.ros_image().copy().convert("RGBA")
+            image = self.scenario.get_visualization_image().copy().convert("RGBA")
+            carb.log_warn(image)
             data = list(image.tobytes())
             self._occupancy_map_image_provider.set_bytes_data(data, [image.width, image.height])
             self._occ_map_frame.rebuild()
@@ -140,7 +161,8 @@ class MobilityGenExtension(omni.ext.IExt):
         self.keyboard.disconnect()
         self.gamepad.disconnect()
         world = get_world()
-        world.remove_physics_callback("scenario_physics", self.on_physics)
+        if world is not None:
+            world.remove_physics_callback("scenario_physics")
 
     def start_new_recording(self):
         recording_name = datetime.datetime.now().isoformat()
@@ -180,6 +202,7 @@ class MobilityGenExtension(omni.ext.IExt):
         self.scenario.reset()
         if self.recording_enabled:
             self.start_new_recording()
+        self.draw_visualization_image()
 
     def on_physics(self, step_size: int):
 
@@ -198,34 +221,63 @@ class MobilityGenExtension(omni.ext.IExt):
                 if self.step % 15 == 0:
                     self.recording_step_label.text = f"Current recording duration: {self.recording_time:.2f}s"
 
+    
     def build_scenario(self):
 
         async def _build_scenario_async():
             
             self.clear_recording()
             self.clear_scenario()
+            self.disable_recording()
 
-            config = self.create_config()
+            # Get parameters from UI
+            scenario_type_str = list(SCENARIOS.names())[self.scenario_combo_box.model.get_item_value_model().get_value_as_int()]
+            robot_type_str = list(ROBOTS.names())[self.robot_combo_box.model.get_item_value_model().get_value_as_int()]
+            scene_usd_str = self.scene_usd_field_string_model.as_string
 
-            self.config = config
-            self.scenario = await build_scenario_from_config(config)
-
-            self.draw_occ_map()
+            robot_type = ROBOTS.get(robot_type_str)
+            scenario_type = SCENARIOS.get(scenario_type_str)
             
-            world = get_world()
-            await world.reset_async()
+            # Set config
+            self.config = Config(
+                scenario_type=scenario_type_str,
+                robot_type=robot_type_str,
+                scene_usd=scene_usd_str
+            )
+            
+            occupancy_map = OccupancyMap.from_ros_yaml(
+                os.path.expanduser(self.omap_field_string_model.as_string))
 
-            self.scenario.reset()
-
-            world.add_physics_callback("scenario_physics", self.on_physics)
-
-            # cache stage
+            # Open stage and save local copy
+            open_stage(scene_usd_str)
             self.cached_stage_path = os.path.join(tempfile.mkdtemp(), "stage.usd")
             save_stage(self.cached_stage_path)
 
-            if self.recording_enabled:
-                self.start_new_recording()
+            # Initialize world
+            world = new_world(physics_dt=robot_type.physics_dt)
+            await world.initialize_simulation_context_async()
 
-            # self.scenario.save(path)
+            # Add ground plane
+            objects.GroundPlane("/World/ground_plane", visible=False)
+            
+            # Add robot
+            robot = robot_type.build("/World/robot")
+            
+            # Set the chase camera
+            chase_camera_path = robot.build_chase_camera()
+            set_viewport_camera(chase_camera_path)
+            
+            # Set the scenario
+            self.scenario = scenario_type.from_robot_occupancy_map(robot, occupancy_map)
+
+            # Draw the occupancy map
+            self.draw_visualization_image()
+
+            # Run the scenario
+            await world.reset_async()
+            world.add_physics_callback("scenario_physics", self.on_physics)
+
+            self.reset()
+
 
         asyncio.ensure_future(_build_scenario_async())

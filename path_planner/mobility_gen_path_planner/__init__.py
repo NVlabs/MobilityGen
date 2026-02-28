@@ -69,3 +69,17 @@ def generate_paths(start: Tuple[int, int], freespace: np.ndarray) -> GeneratePat
         prev_i=prev_i,
         prev_j=prev_j
     )
+
+def compress_path(path: np.ndarray, eps=1e-3):
+    pref = path[1:-1]
+    pnext = path[2:]
+    pprev = path[:-2]
+
+    vnext = pnext - pref
+    vprev = pref - pprev
+
+    keepmask = np.ones((path.shape[0],), dtype=bool)  # keep beginning / end by default
+    keepmask[1:-1] = np.sum((vnext - vprev)**2, axis=-1) > eps
+
+
+    return path[keepmask], keepmask

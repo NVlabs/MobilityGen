@@ -64,11 +64,35 @@ class OccupancyMapGenerateRotation(enum.Enum):
 
 
 
+def compute_occupancy_bounds_from_prim_path(
+        prim_path: str, 
+        z_min: float, 
+        z_max: float, 
+        cell_size: float
+    ):
+
+    stage = get_stage()
+    
+    prim_path = os.path.join(prim_path)
+    prim_path = stage.GetPrimAtPath(prim_path)
+
+    lower_bound, upper_bound, midpoint = prim_compute_bbox(prim_path)
+    lower_bound = (lower_bound[0], lower_bound[1], z_min)
+    upper_bound = (upper_bound[0], upper_bound[1], z_max)
+
+    width = upper_bound[0] - lower_bound[0]
+    height = upper_bound[1] - lower_bound[1]
+    origin = (lower_bound[0] - cell_size, lower_bound[1] - cell_size, 0)
+    lower_bound = (0, 0, z_min)
+    upper_bound = (width + cell_size, height + cell_size, z_max)
+    return origin, lower_bound, upper_bound
+
+
 async def occupancy_map_generate_from_prim_async(
-        prim_path: str,
+        origin: tp.Tuple[float, float, float],
+        lower_bound: tp.Tuple[float, float, float],
+        upper_bound: tp.Tuple[float, float, float],
         cell_size: float = OCCUPANCY_MAP_DEFAULT_CELL_SIZE,
-        z_min: float = OCCUPANCY_MAP_DEFAULT_Z_MIN,
-        z_max: float = OCCUPANCY_MAP_DEFAULT_Z_MAX,
         rotation: OccupancyMapGenerateRotation = OccupancyMapGenerateRotation.ROTATE_180,
         unknown_as_freespace: bool = True
     ) -> OccupancyMap:
@@ -94,18 +118,6 @@ async def occupancy_map_generate_from_prim_async(
     
 
     # Compute bounds for occupancy map calculation using specified prim
-    prim_path = os.path.join(prim_path)
-    prim_path = stage.GetPrimAtPath(prim_path)
-
-    lower_bound, upper_bound, midpoint = prim_compute_bbox(prim_path)
-    lower_bound = (lower_bound[0], lower_bound[1], z_min)
-    upper_bound = (upper_bound[0], upper_bound[1], z_max)
-
-    width = upper_bound[0] - lower_bound[0]
-    height = upper_bound[1] - lower_bound[1]
-    origin = (lower_bound[0] - cell_size, lower_bound[1] - cell_size, 0)
-    lower_bound = (0, 0, z_min)
-    upper_bound = (width + cell_size, height + cell_size, z_max)
 
     update_location(
         om,

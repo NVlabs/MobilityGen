@@ -1,5 +1,5 @@
 import json
-from typing import Literal
+from typing import Literal, Optional, Tuple
 from dataclasses import dataclass, asdict
 
 
@@ -14,4 +14,9 @@ class Config:
     
     @staticmethod
     def from_json(data: str):
-        return Config(**json.loads(data))
+        data = json.loads(data)
+        return Config(
+            scenario_type=data['scenario_type'],
+            robot_type=data['robot_type'],
+            scene_usd=data['scene_usd']
+        )
